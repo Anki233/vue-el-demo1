@@ -57,7 +57,7 @@ npm run build
 .
 ├── README.md           
 ├── package.json       // 项目配置文件
-├── public       	 // 富文本编辑器相关文件
+├── public       // 富文本编辑器相关文件
 ├── src                // 生产目录
 │   ├── assets         // css js 和图片资源
 │   ├── common          // 二次封装路由 公共配置文件 放置
