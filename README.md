@@ -65,6 +65,5 @@ npm run build
 │   ├── plugins         // element-ui插件
 │   ├── store          // vuex状态管理器
 │   ├── views           // 各种页面
-│   ├── App.vue         // 入口文件
-│   └── main.js        // Webpack 预编译入口
+│   └── main.js        // 入口文件
 </pre>
