@@ -17,6 +17,9 @@
     8、涉及tinymce富文本编辑器
     9、对路由进行二次封装，实现路由动态生成
 
+#### 预览地址
+https://elegant-khorana-ebb3bb.netlify.app
+
 #### 目前实现
 
 静态页面+静态数据 	后端暂无
