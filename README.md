@@ -18,7 +18,7 @@
     9、对路由进行二次封装，实现路由动态生成
 
 #### 预览地址
-https://elegant-khorana-ebb3bb.netlify.app
+https://el-admin-demo1.netlify.app
 
 #### 目前实现
 
