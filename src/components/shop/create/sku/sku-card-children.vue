@@ -14,20 +14,19 @@
 			</template>
 			
 		</div>
-		<input :value="item.name" @input="inputChange" class="form-control text-center border-0" style="width: 80px;font-style: 15px;" />
+		<input v-if="type === 0" :value="item.text" @input="inputChange" class="form-control text-center border-0" style="width: 80px;font-style: 15px;" />
 		<!-- 删除 -->
-		<span class="btn btn-light p-0 position-absolute" style="line-height: 1;top: -10px;right: -10px;" @click="delSkuValue({cardIndex,valueIndex:index})">
+		<span class="btn btn-light p-0 position-absolute" style="line-height: 1;top: -10px;right: -10px;" @click="delSkuValueEvent">
 			<i class="el-icon-circle-close"></i>
 		</span>
 	</div>
 </template>
 
 <script>
-	import {
-		mapMutations
-	} from "vuex"
+	import {mapMutations} from "vuex"
+	
 	export default {
-		inject:['app'],
+		inject:['app','layout'],
 		props: {
 			type: {
 				type: Number,
@@ -37,10 +36,44 @@
 			index: Number,
 			cardIndex: Number
 		},
+		watch:{
+			type(newVal,oldVal) {
+				let keys = ['text','color','image']
+				let defaultVal = ['属性值','#FFFFFF','/favicon.co']
+				this.item.value = this.item[keys[newVal]] ? this.item[keys[newVal]] : defaultVal[newVal] 
+				this.updateSkuValueEvent()
+			}
+		},
 		methods: {
 			...mapMutations(['delSkuValue','updateSkuValue']),
+			delSkuValueEvent() {
+				this.layout.showLoading()
+				this.axios.post('/admin/goods_skus_card_value/'+this.item.id+'/delete',{},{
+					token:true
+				}).then(res=>{
+					let data = res.data.data
+					this.delSkuValue({
+						cardIndex:this.cardIndex,
+						valueIndex:this.index,
+					})
+					this.layout.hideLoading()
+				}).catch(err=>{
+					this.layout.hideLoading()
+				})
+			},
+			updateSkuValueEvent() {
+				let keys = ['text','color','image']
+				this.item.value = this.item[keys[this.type]]
+				this.axios.post('/admin/goods_skus_card_value/'+this.item.id,this.item,{
+					token:true
+				}).then(res=>{
+					
+				}).catch(err=>{
+					
+				})
+			},
 			inputChange(e){
-				this.vModel('name',e.target.value)
+				this.vModel('text',e.target.value)
 			},
 			vModel(key,value){
 				this.updateSkuValue({
@@ -49,6 +82,7 @@
 					key,
 					value
 				})
+				this.updateSkuValueEvent()
 			},
 			// 选择图片
 			chooseImage() {

@@ -18,7 +18,7 @@
 		<tbody>
 			<tr v-for="(item,index) in list" :key="index">
 				<!-- 商品规格 -->
-				<th scope="row"  class="text-center" v-for="(sku,skuI) in item.skus" :key="skuI">{{sku.name}}</th>
+				<th scope="row"  class="text-center" v-for="(sku,skuI) in item.skus" :key="skuI">{{sku.value}}</th>
 				<td class="text-center" width="120">
 					<span v-if="!item.image" class="btn btn-light border mr-2" @click="chooseImage(item)">
 						<i class="el-icon-plus"></i>

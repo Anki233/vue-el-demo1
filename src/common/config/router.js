@@ -37,13 +37,43 @@ let routes = [{
 			},
 			{
 				meta: {
+					title: '修改商品详情'
+				},
+				component: 'shop/goods/content'
+			},
+			{
+				meta: {
+					title: '媒体设置'
+				},
+				component: 'shop/goods/banner'
+			},
+			{
+				meta: {
+					title: '商品属性'
+				},
+				component: 'shop/goods/attr'
+			},
+			{
+				meta: {
+					title: '商品规格'
+				},
+				component: 'shop/goods/sku'
+			},
+			{
+				meta: {
+					title: '商品规格'
+				},
+				component: 'shop/goods/discount'
+			},
+			{
+				meta: {
 					title: '商品分类'
 				},
 				component: 'shop/category/list'
 			},
 			{
 				meta: {
-					title: '商品规格'
+					title: '折扣设置'
 				},
 				component: 'shop/sku/list'
 			},
@@ -112,6 +142,12 @@ let routes = [{
 					title: '交易设置'
 				},
 				component: 'set/payment/index'
+			},
+			{
+				meta: {
+					title: '404错误'
+				},
+				component: 'error/404'
 			}
 		]
 	},

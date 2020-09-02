@@ -2,8 +2,7 @@
 	<el-dialog title="商品规格选择" :visible.sync="createModel" width="80%" top="5vh">
 		<el-container style="position: relative;height: 70vh;margin: -30px -20px;">
 			<el-container>
-				<el-aside width="200px" style="position: absolute;top: 0;left: 0;bottom: 0;" class="bg-white border-right">
-
+				<el-aside width="200px" style="position: absolute;top: 0;left: 0;bottom: 50px;" class="bg-white border-right">
 					<!-- 侧边 | 规格卡片标题-->
 					<ul class="list-group list-group-flush">
 						<li v-for="(item,index) in skusList" :key="index" 
@@ -14,6 +13,11 @@
 						</li>
 					</ul>
 				</el-aside>
+				<el-footer class="boder" style="display: flex;align-items: center;justify-content: center; position: absolute;left: 0;bottom: 0;height: 50px;width: 200px;">
+					<el-pagination :current-page="page.current" :page-sizes="page.sizes" :page-size="page.size" layout="prev, next"
+					 :total="page.total" @size-change="handleSizeChange" @current-change="handleCurrentChange">
+					</el-pagination>
+				</el-footer>
 				<el-container>
 					<el-header class="border-top border-bottom" style="position: absolute;top: 0;left: 200px;right: 0;height: 60px;line-height: 60px;">
 						<el-button type="primary" size="mini" @click="doChooseAll">
@@ -33,7 +37,6 @@
 				</el-container>
 			</el-container>
 		</el-container>
-
 		<div slot="footer" class="dialog-footer">
 			<el-button @click="hide">取 消</el-button>
 			<el-button type="primary" @click="confirm">确 定</el-button>
@@ -42,70 +45,51 @@
 </template>
 
 <script>
+	import common from '@/common/mixins/common.js'
 	export default {
+		mixins:[common],
 		data() {
 			return {
+				preUrl:"skus",
+				loading:false,
 				createModel: false,
 				callback: false,
 				// 选中的数组
 				chooseList: [],
 				skuIndex:0,
 				// 数据
-				skusList: [{
-						name: "颜色",
-						type: 0, 
-						list: [{
-								id:1,
-								name: "黄色",
-								image: "",
-								color: "",
-								ischeck:false
-							},
-							{
-								id:2,
-								name: "红色",
-								image: "",
-								color: "",
-								ischeck:false
-							}
-						]
-					},
-					{
-						name: "尺寸",
-						type: 0, 
-						list: [{
-								id:3,
-								name: "XL",
-								image: "",
-								color: "",
-								ischeck:false
-							},
-							{
-								id:4,
-								name: "L",
-								image: "",
-								color: "",
-								ischeck:false
-							}
-						]
-					}
-				]
+				skusList: []
 			}
 		},
 		computed:{
 			// 当前规格下的规格属性列表
 			skuItems(){
-				return this.skusList[this.skuIndex].list
+				let item = this.skusList[this.skuIndex]
+				return item && item.list
 			},
 			// 是否全选
 			isChooseAll() {
-				return this.skuItems.length === this.chooseList.length
+				//return this.skuItems.length === this.chooseList.length
 			}
 		},
 		created() {
 
 		},
 		methods: {
+			getListResult(e) {
+				this.skusList = e.list.map(item=>{
+					let list = item.default.split(',')
+					item.list = list.map(name=>{
+						return {
+							name:name,
+							image:"",
+							color:"",
+							ischeck:false
+						}
+					})
+					return item
+				})
+			},
 			// 打开弹出层
 			chooseSkus(callback) {
 				// 取消选中
@@ -118,6 +102,7 @@
 				if (typeof this.callback === 'function') {
 					let item = this.skusList[this.skuIndex]
 					this.callback({
+						id:item.id,
 						name:item.name,
 						type:item.type,
 						list:this.chooseList
@@ -177,7 +162,7 @@
 				let list = this.skusList[this.skuIndex].list
 				// 取消选中状态
 				list.forEach(v=>{
-					v.ischeck = !v.ischeck
+					v.ischeck = false
 				})
 				// 清空选中列表
 				return this.chooseList = []

@@ -49,7 +49,7 @@
 </template>
 
 <script>
-	import buttonSearch from "../../../components/common/button-search.vue"
+	import buttonSearch from "@/components/common/button-search.vue"
 	export default {
 		components: {
 			buttonSearch

@@ -5,11 +5,11 @@
 				<!-- 头部 -->
 				<div class="d-flex mr-auto">
 					<el-select v-model="searchForm.order" class="mr-2" placeholder="请选择图片排序方式" size="mini" style="width: 160px;">
-						<el-option label="区域一" value="shanghai"></el-option>
-						<el-option label="区域二" value="beijing"></el-option>
+						<el-option label="降序" value="desc"></el-option>
+						<el-option label="升序" value="asc"></el-option>
 					</el-select>
-					<el-input class="mr-2" v-model="searchForm.keyword" placeholder="输入相册名称" size="mini" style="width: 150px;"></el-input>
-					<el-button type="success" size="mini">搜索</el-button>
+					<el-input class="mr-2" v-model="searchForm.keyword" placeholder="输入图片名称" size="mini" style="width: 150px;"></el-input>
+					<el-button type="success" size="mini" @click="getImageList">搜索</el-button>
 				</div>
 				<el-button type="info" v-if="chooseList.length" size="mini" @click="unChoose">取消选中</el-button>
 				<el-button type="danger" v-if="chooseList.length" size="mini" @click="imageDel({all:true})">批量删除</el-button>
@@ -18,7 +18,6 @@
 			</el-header>
 			<el-container>
 				<el-aside width="200px" style="position: absolute;top: 60px;left: 0;bottom: 60px;" class="bg-white border-right">
-
 					<!-- 侧边 | 相册列表-->
 					<ul class="list-group list-group-flush">
 						<albumItem v-for="(item,index) in albums" :key="index" :item="item" :index="index" :active="albumIndex === index"
@@ -42,7 +41,7 @@
 											<el-button-group>
 												<el-button size="mini" class="p-2" icon="el-icon-view" @click="previewImage(item)"></el-button>
 												<el-button size="mini" class="p-2" icon="el-icon-edit" @click="imageEdit(item,index)"></el-button>
-												<el-button size="mini" class="p-2" icon="el-icon-delete" @click="imageDel({index})"></el-button>
+												<el-button size="mini" class="p-2" icon="el-icon-delete" @click="imageDel({index,item})"></el-button>
 											</el-button-group>
 										</div>
 									</div>
@@ -56,18 +55,17 @@
 				<!-- 底部 -->
 				<div style="width: 200px;flex-shrink: 0;" class="h-100 d-flex align-items-center justify-content-center border-right">
 					<el-button-group>
-						<el-button size="mini">上一页</el-button>
-						<el-button size="mini">下一页</el-button>
+						<el-button size="mini" :disabled="albumPage === 1" @click="changeAlbumPage('pre')">上一页</el-button>
+						<el-button size="mini" :disabled="albumPage === Math.ceil(albumTotal / 10)"  @click="changeAlbumPage('next')">下一页</el-button>
 					</el-button-group>
 				</div>
 				<div style="flex:1" class="px-2">
 					<el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage"
-					 :page-sizes="[100, 200, 300, 400]" :page-size="100" layout="total, sizes, prev, pager, next, jumper" :total="400">
+					 :page-sizes="pageSizes" :page-size="pageSize" layout="total, sizes, prev, pager, next, jumper" :total="total">
 					</el-pagination>
 				</div>
 			</el-footer>
 		</el-container>
-
 		<!-- 修改 | 创建相册  -->
 		<el-dialog :title="albumModelTitle" :visible.sync="albumModel">
 			<el-form ref="form" :model="albumForm" label-width="80px">
@@ -83,18 +81,18 @@
 				<el-button type="primary" @click="confirmAlbumModel">确 定</el-button>
 			</div>
 		</el-dialog>
-
 		<!-- 上传图片 -->
-		<el-dialog title="上传图片" :visible.sync="uploadModel">
+		<el-dialog title="上传图片" :visible.sync="uploadModel" @close="__init">
 			<div class="text-center">
-				<el-upload class="upload-demo" drag action="https://jsonplaceholder.typicode.com/posts/" multiple>
+				<el-upload class="upload-demo" drag action="/admin/image/upload" multiple name="img"
+					:headers="{ token:$store.state.user.token }" :data="{image_class_id:image_class_id}"
+					:on-success="uploadSuccess">
 					<i class="el-icon-upload"></i>
 					<div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
 					<div class="el-upload__tip" slot="tip">只能上传jpg/png文件，且不超过500kb</div>
 				</el-upload>
 			</div>
 		</el-dialog>
-
 		<!-- 预览图片 -->
 		<el-dialog :visible.sync="previewModel" width="60vw" top="5vh">
 			<div style="margin: -60px -20px -30px -20px;">
@@ -106,14 +104,16 @@
 
 <script>
 	import albumItem from '@/components/image/album-item.vue'
+
 	export default {
+		inject:['layout'],
 		components: {
 			albumItem
 		},
 		data() {
 			return {
 				searchForm: {
-					order: "",
+					order: "desc",
 					keyword: ""
 				},
 				albumModel: false,
@@ -124,22 +124,43 @@
 					order: 0
 				},
 				albums: [],
+				albumPage:1,
+				albumTotal:0,
 				uploadModel: false,
 				previewModel: false,
 				previewUrl: "",
 				imagesList: [],
 				// 选中的数组
 				chooseList: [],
-				currentPage: 1
+				currentPage: 1,
+				pageSize:10,
+				pageSizes:[10,20,50,100],
+				total:10
 			}
 		},
 		computed: {
 			albumModelTitle() {
 				return this.albumEditIndex > -1 ? '修改相册' : '创建相册'
+			},
+			// 选中相册id
+			image_class_id() {
+				let item = this.albums[this.albumIndex]
+				if(item) {
+					return item.id
+				}
+				return 0
+			},
+			// 当前选中相册的图片列表URL
+			getImageListUrl() {
+				let other = ''
+				if(this.searchForm.keyword != '') {
+					other = `&keyword=${this.searchForm.keyword}`
+				}
+				return `/admin/imageclass/${this.image_class_id}/image/${this.currentPage}?limit=${this.pageSize}&order=${this.searchForm.order}&{other}`
 			}
 		},
 		created() {
-			this._init()
+			this.__init()
 		},
 		methods: {
 			// 取消选中
@@ -157,9 +178,6 @@
 						this.chooseList.splice(i,1)
 					}
 				})
-				
-				
-				
 			},
 			// 选中图片
 			choose(item) {
@@ -197,27 +215,47 @@
 				item.ischeck = false
 				item.checkOrder = 0
 			},
-			_init() {
-				for (var i = 0; i < 20; i++) {
-					this.albums.push({
-						name: "相册" + i,
-						num: Math.floor(Math.random() * 100),
-						order: i
+			// 获取对应相册下的图片列表
+			getImageList() {
+				this.layout.showLoading()
+				this.axios.get(this.getImageListUrl,{
+					token:true
+				}).then(res=>{
+					let result = res.data.data
+					this.imagesList = result.list.map(item=>{
+						return {
+							id: item.id,
+							url: item.url,
+							name: item.name,
+							ischeck: false,
+							checkOrder: 0
+						}
 					})
-				}
-				for (var i = 0; i < 30; i++) {
-					this.imagesList.push({
-						id: i,
-						url: "https://img10.360buyimg.com/seckillcms/s500x500_jfs/t1/148692/35/5175/55151/5f3251dfE204f4e1c/9ea7d7de05553147.jpg",
-						name: "图片" + i,
-						ischeck: false,
-						checkOrder: 0
-					})
-				}
+					this.total = result.totalCount
+					this.layout.hideLoading()
+				}).catch(err=>{
+					this.layout.hideLoading()
+				})
+			},
+			__init() {
+				// 获取相册列表
+				this.layout.showLoading()
+				this.axios.get('admin/imageclass/'+this.albumPage,{
+					token:true
+				}).then(res=>{
+					let result = res.data.data
+					this.albums = result.list
+					this.albumTotal = result.totalCount
+					// 获取选中相册下的第一页图片列表
+					this.getImageList()
+				}).catch(err=>{
+					this.layout.hideLoading()
+				})
 			},
 			// 切换相册
 			albumChange(index) {
 				this.albumIndex = index
+				this.getImageList()
 			},
 			// 打开相册修改/创建框
 			openAlbumModel(obj) {
@@ -249,18 +287,41 @@
 					this.albumEdit()
 					return this.albumModel = false
 				}
-				// 追加albums
-				this.albums.unshift({
-					name: this.albumForm.name,
-					order: this.albumForm.order,
-					num: 0
+				// 创建相册
+				this.layout.showLoading()
+				this.axios.post('/admin/imageclass',this.albumForm,{
+					token:true
+				}).then(res=>{
+					// 隐藏表单
+					this.albumModel = false
+					this.layout.hideLoading()
+					this.$message({
+						message:'创建成功',
+						type:'success'
+					})
+					this.__init()
+				}).catch(err=>{
+					this.layout.hideLoading()
 				})
-				return this.albumModel = false
 			},
 			// 修改相册
 			albumEdit() {
-				this.albums[this.albumEditIndex].name = this.albumForm.name
-				this.albums[this.albumEditIndex].order = this.albumForm.order
+				let item = this.albums[this.albumEditIndex]
+				this.layout.showLoading()
+				this.axios.post('/admin/imageclass/'+item.id,this.albumForm,{
+					token:true
+				}).then(res=>{
+					this.layout.hideLoading()
+					this.$message({
+						message:'修改成功',
+						type:'success'
+					})
+					this.__init()
+				}).catch(err=>{
+					this.layout.hideLoading()
+				})
+				// this.albums[this.albumEditIndex].name = this.albumForm.name
+				// this.albums[this.albumEditIndex].order = this.albumForm.order
 			},
 			// 删除相册
 			albumDel(index) {
@@ -269,11 +330,20 @@
 					cancelButtonText: '取消',
 					type: 'warning'
 				}).then(() => {
-					this.albums.splice(index, 1)
-					this.$message({
-						type: 'success',
-						message: '删除成功!'
-					});
+					let id = this.albums[index].id
+					this.layout.showLoading()
+					this.axios.delete('/admin/imageclass/'+id,{
+						token:true
+					}).then(res=>{
+						this.$message({
+							message:'删除成功',
+							type:'success'
+						})
+						this.__init()
+						this.layout.hideLoading()
+					}).catch(err=>{
+						this.layout.hideLoading()
+					})
 				}).catch(() => {
 					this.$message({
 						type: 'info',
@@ -296,20 +366,24 @@
 							return '图片名称不能为空'
 						}
 					}
-				}).then(({
-					value
-				}) => {
-					item.name = value
-					this.$message({
-						type: 'success',
-						message: '修改成功'
-					});
-				}).catch(() => {
-					this.$message({
-						type: 'info',
-						message: '修改取消'
-					});
-				});
+				}).then(({ value }) => {
+					this.layout.showLoading()
+					this.axios.post('/admin/image/'+item.id,{
+						name:value
+					},{
+						token:true
+					}).then(res=>{
+						this.__init()
+						this.layout.hideLoading()
+						this.$message({
+							type: 'success',
+							message: '修改成功'
+						});
+					}).catch(err=>{
+						
+						this.layout.hideLoading()
+					})
+				})
 			},
 			// 删除当前图片
 			imageDel(obj) {
@@ -318,19 +392,40 @@
 					cancelButtonText: '取消',
 					type: 'warning'
 				}).then(() => {
+					this.layout.showLoading()
 					if (obj.all) {
-						let list = this.imagesList.filter(img => {
-							return !this.chooseList.some(c => c.id === img.id)
+						// 批量删除
+						let ids = this.chooseList.map(item=>item.id)
+						this.axios.post('/admin/image/delete_all',{
+							ids:ids
+						},{
+							token:true
+						}).then(res=>{
+							this.__init()
+							this.$message({
+								message: '删除成功',
+								type: 'success'
+							})
+							this.chooseList = []
+							this.layout.hideLoading()
+						}).catch(err=>{
+							this.layout.hideLoading()
 						})
-						this.imagesList = list
-						this.chooseList = []
 					} else {
-						this.imagesList.splice(obj.index, 1)
+						// 删除单个
+						this.axios.delete('/admin/image/'+obj.item.id,{
+							token:true
+						}).then(res=>{
+							this.__init()
+							this.$message({
+								message: '删除成功',
+								type: 'success'
+							})
+							this.layout.hideLoading()
+						}).catch(err=>{
+							this.layout.hideLoading()
+						})
 					}
-					this.$message({
-						message: '删除成功',
-						type: 'success'
-					})
 				}).catch(() => {
 					this.$message({
 						type: 'info',
@@ -339,10 +434,25 @@
 				})
 			},
 			handleSizeChange(val) {
-				console.log(`每页 ${val} 条`);
+				this.pageSize = val
+				this.getImageList()
 			},
 			handleCurrentChange(val) {
-				console.log(`当前页: ${val}`);
+				this.currentPage = val
+				this.getImageList()
+			},
+			// 分页
+			changeAlbumPage(type) {
+				if(type === 'pre') {
+					this.albumPage--
+				}else {
+					this.albumPage++
+				}
+				this.__init()
+			},
+			// 上传成功后的回调
+			uploadSuccess(response, file, fileList){
+				//console.log(response, file, fileList)
 			}
 		}
 	}
