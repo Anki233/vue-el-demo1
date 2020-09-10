@@ -33,7 +33,7 @@ https://el-admin-demo1.netlify.app
 （`git clone`）
 
 ```shell
-git clone https://github.com/Unsakula/vue-el-demo1.git
+https://github.com/Anki233/vue-el-demo1.git
 ```
 
 #### 通过`npm`安装本地服务第三方依赖模块(需要已安装[Node.js](https://nodejs.org/))
