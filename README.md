@@ -54,6 +54,11 @@ npm run serve
 npm run build
 ```
 
+#### 登录
+
+用户名: admin
+密码: admin
+
 #### 开发
 
 #### 目录结构
